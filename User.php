@@ -1,8 +1,7 @@
 <?php
-
 class User
 {
-    private const FOLDERS = "../passwords";
+    private const FOLDERS = "../../passwords";
 
     public function __construct(private string $username)
     {
@@ -19,47 +18,51 @@ class User
         $patternPassword = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/";
         if (strlen($password) < 8 || strlen($password) > 60) return 2;
         if (!preg_match($patternPassword, $password)) return 5;
+        $hashPass = password_hash($password, PASSWORD_DEFAULT);
 
-        try {
-            if (file_exists(self::FOLDERS . "/" . $this->username . ".txt") && filesize(self::FOLDERS . "/" . $this->username . ".txt") > 0) return 4;
-            file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $password);
-            return 0;
-        } catch (Exception $e) {
-            return 6;
-        }
+        if (file_exists(self::FOLDERS . "/" . $this->username . ".txt") && filesize(self::FOLDERS . "/" . $this->username . ".txt") > 0) return 4;
+        file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $hashPass);
+        return 0;
     }
 
     public function updateUser($oldPassword, $newPassword)
     {
-        if (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) return 8;
+        $patternPassword = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/";
+        if ($oldPassword == "" || $newPassword == "") return 1;
+        if (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) return 4;
 
         $password = file_get_contents(self::FOLDERS . "/" . $this->username . ".txt");
-        if ($password !== $oldPassword) return 7;
-
-        $patternPassword = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/";
+        if (!password_verify($oldPassword, $password)) return 6;
         if (strlen($newPassword) < 8 || strlen($newPassword) > 60) return 2;
         if (!preg_match($patternPassword, $newPassword)) return 5;
-
-        try {
-            file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $newPassword);
-            return 0;
-        } catch (Exception $e) {
-            return 6;
-        }
+        $hashPass = password_hash($newPassword, PASSWORD_DEFAULT);
+        file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $hashPass);
+        return 0;
     }
 
     public function deleteUser()
     {
-        (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) && 8;
+        if (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) return 4;
         unlink(self::FOLDERS . "/" . $this->username . ".txt");
         return 0;
     }
 
     public function connect($password)
     {
+        if ($this->username == "" || $password == "") return 1;
+        if (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) return 4;
+        $passwordHash = file_get_contents(self::FOLDERS . "/" . $this->username . ".txt");
+        if (!password_verify($password, $passwordHash)) return 6;
+        session_start();
+        $_SESSION['username'] = $this->username;
+        return 0;
     }
 
     public function logout()
     {
+        session_start();
+        session_unset();
+        session_destroy();
+        return 0;
     }
 }

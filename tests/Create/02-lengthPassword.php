@@ -1,5 +1,5 @@
 <?php
-include("../User.php");
+include("../../User.php");
 
 $randomUsername = "username" . rand(0, 1000000);
 
