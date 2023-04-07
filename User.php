@@ -12,17 +12,17 @@ class User
     {
         $patternName = "/^([A-Za-z0-9]){3,20}$/";
         (!file_exists(self::FOLDERS)) && mkdir(self::FOLDERS);
-        return ($this->username == "" || $password == "") && 1;
-        return (strlen($this->username) < 3 || strlen($this->username) > 20) && 2;
-        return (!preg_match($patternName, $this->username)) && 3;
+        if ($this->username == "" || $password == "") return 1;
+        if (strlen($this->username) < 3 || strlen($this->username) > 20) return 2;
+        if (!preg_match($patternName, $this->username)) return 3;
 
-        $this->critereVerif($password);
+        $patternPassword = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/";
+        if (strlen($password) < 8 || strlen($password) > 60) return 2;
+        if (!preg_match($patternPassword, $password)) return 5;
 
         try {
-            (file_exists(self::FOLDERS . "/" . $this->username . ".txt") && filesize(self::FOLDERS . "/" . $this->username . ".txt") > 0) && 4;
-            $stream = fopen(self::FOLDERS . "/" . $this->username . ".txt", "w");
-            fwrite($stream, $password);
-            fclose($stream);
+            if (file_exists(self::FOLDERS . "/" . $this->username . ".txt") && filesize(self::FOLDERS . "/" . $this->username . ".txt") > 0) return 4;
+            file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $password);
             return 0;
         } catch (Exception $e) {
             return 6;
@@ -31,19 +31,17 @@ class User
 
     public function updateUser($oldPassword, $newPassword)
     {
-        (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) && 8;
+        if (!file_exists(self::FOLDERS . "/" . $this->username . ".txt")) return 8;
 
         $password = file_get_contents(self::FOLDERS . "/" . $this->username . ".txt");
+        if ($password !== $oldPassword) return 7;
 
-        ($password !== $oldPassword) && 7;
-
-        $this->critereVerif($newPassword);
+        $patternPassword = "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/";
+        if (strlen($newPassword) < 8 || strlen($newPassword) > 60) return 2;
+        if (!preg_match($patternPassword, $newPassword)) return 5;
 
         try {
-            (file_exists(self::FOLDERS . "/" . $this->username . ".txt") && filesize(self::FOLDERS . "/" . $this->username . ".txt") > 0) && 4;
-            $stream = fopen(self::FOLDERS . "/" . $this->username . ".txt", "w");
-            fwrite($stream, $newPassword);
-            fclose($stream);
+            file_put_contents(self::FOLDERS . "/" . $this->username . ".txt", $newPassword);
             return 0;
         } catch (Exception $e) {
             return 6;
@@ -63,12 +61,5 @@ class User
 
     public function logout()
     {
-    }
-
-    public function critereVerif($password)
-    {
-        $patternPassword = "/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,60}$/";
-        return (strlen($password) < 8 || strlen($password) > 60) && 2;
-        return (!preg_match($patternPassword, $password)) && 5;
     }
 }
